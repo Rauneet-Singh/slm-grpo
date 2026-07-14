@@ -154,4 +154,4 @@ def xmlcount_reward(
         reward = min(0.5, count * 0.1)
         rewards.append(reward)
     return rewards
-PYEOF
+
