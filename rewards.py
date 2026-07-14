@@ -23,6 +23,9 @@ def correctness_reward(
     rewards = []
 
     for completion, ground_truth in zip(completions, answers):
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         if not isinstance(ground_truth, str):
             ground_truth = str(ground_truth)
 
@@ -66,6 +69,9 @@ def format_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         has_reasoning = (
             "<reasoning>" in completion and "</reasoning>" in completion
         )
@@ -95,6 +101,9 @@ def int_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         answer_match = re.search(r"<answer>([^<]+)</answer>", completion)
         if answer_match:
             content = answer_match.group(1).strip()
@@ -127,6 +136,9 @@ def xmlcount_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         count = 0
         if "<reasoning>" in completion:
             count += 1
@@ -142,3 +154,4 @@ def xmlcount_reward(
         reward = min(0.5, count * 0.1)
         rewards.append(reward)
     return rewards
+PYEOF
