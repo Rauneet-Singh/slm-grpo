@@ -27,12 +27,7 @@ def main() -> None:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    model_kwargs = {
-        "torch_dtype": getattr(torch, config.model.torch_dtype),
-        "attn_implementation": config.model.attn_implementation,
-        "device_map": "auto",
-    }
-
+    lora_config = None
     if config.model.use_lora:
         from peft import LoraConfig
 
@@ -43,10 +38,12 @@ def main() -> None:
             target_modules=list(config.model.lora_target_modules),
             task_type="CAUSAL_LM",
         )
-        model_kwargs["peft_config"] = lora_config
 
     model = AutoModelForCausalLM.from_pretrained(
-        config.model.model_name, **model_kwargs
+        config.model.model_name,
+        dtype=getattr(torch, config.model.torch_dtype),
+        attn_implementation=config.model.attn_implementation,
+        device_map="auto"   
     )
 
     print_trainable_parameters(model)
@@ -73,6 +70,7 @@ def main() -> None:
         save_total_limit=config.grpo.save_total_limit,
         eval_strategy=config.grpo.eval_strategy,
         bf16=config.grpo.bf16,
+        use_cpu=False,
         report_to=config.grpo.report_to,
         seed=config.grpo.seed,
         remove_unused_columns=False,
@@ -89,6 +87,7 @@ def main() -> None:
         ],
         args=training_args,
         train_dataset=train_dataset,
+        peft_config=lora_config,
     )
 
     trainer.train()
