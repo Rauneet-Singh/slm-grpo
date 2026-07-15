@@ -66,10 +66,10 @@ def evaluate(
     model.eval()
 
     dataset = load_dataset(
-        config.data.dataset_name,
-        split=config.data.dataset_split_test,
-    )
-
+    config.data.dataset_name,
+    config.data.dataset_config_name,  # "main" or "socratic"
+    split=config.data.dataset_split_test,
+)
     if max_samples is not None:
         dataset = dataset.select(range(min(max_samples, len(dataset))))
 

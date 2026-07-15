@@ -8,7 +8,7 @@ class ModelConfig:
     torch_dtype: str = "bfloat16"
     attn_implementation: str = "sdpa"
     use_lora: bool = True
-    lora_r: int = 64
+    lora_r: int = 32
     lora_alpha: int = 64
     lora_dropout: float = 0.0
     lora_target_modules: tuple = (
@@ -22,9 +22,9 @@ class ModelConfig:
 class GRPOConfig:
     num_generations: int = 8
     max_completion_length: int = 512
-    temperature: float = 0.5
+    temperature: float = 0.7
     top_p: float = 0.95
-    learning_rate: float = 3e-8
+    learning_rate: float = 2e-5
     beta: float = 0.04
     num_train_epochs: int = 1
     per_device_train_batch_size: int = 2
@@ -54,8 +54,9 @@ class DataConfig:
 
 @dataclass
 class ExperimentConfig:
+    dataset_config_name: str = "main"  # GSM8K subset: "main" (numeric answers) or "socratic" (step-by-step reasoning style)
     model: ModelConfig = field(default_factory=ModelConfig)
     grpo: GRPOConfig = field(default_factory=GRPOConfig)
     data: DataConfig = field(default_factory=DataConfig)
-    wandb_project: str = "grpo-gsm8k"
+    wandb_project: str = "slm_model"
     wandb_run_name: Optional[str] = None

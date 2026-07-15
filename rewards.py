@@ -1,6 +1,22 @@
+
 """Reward functions for GRPO training."""
 
 import re
+
+
+"""Reward functions for GRPO training."""
+
+import re
+
+HASH_PATTERN = re.compile(r"####\s*([0-9\.\-]+)")
+
+
+def extract_number(text: str) -> str | None:
+    """Extract the number following #### from a text block, GSM8K-style."""
+    match = HASH_PATTERN.search(text)
+    if match:
+        return match.group(1).strip().replace(",", "")
+    return None
 
 
 def correctness_reward(
@@ -9,45 +25,40 @@ def correctness_reward(
 ) -> list[float]:
     """Reward completions based on correctness of the extracted answer.
 
-    Compares the extracted answer (after ####) against the ground truth
-    from the dataset. Awards 2.0 for correct, 0.0 for incorrect.
-
-    Args:
-        completions: List of model completion strings.
-        **kwargs: Must contain 'answer' key with ground truth answers.
-
-    Returns:
-        List of reward values.
+    Compares the extracted answer (after ####) in the completion against
+    the ground-truth answer's #### number (GSM8K raw answers contain full
+    reasoning text plus a trailing #### line — both sides must be parsed
+    the same way).
     """
     answers = kwargs.get("answer", [""] * len(completions))
     rewards = []
 
     for completion, ground_truth in zip(completions, answers):
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
         if not isinstance(ground_truth, str):
             ground_truth = str(ground_truth)
 
-        hash_match = re.search(r"####\s*([0-9\.\-]+)", completion)
-        if not hash_match:
+        extracted = extract_number(completion)
+        ground_clean = extract_number(ground_truth)   # FIX: parse ground truth too
+
+        if extracted is None or ground_clean is None:
             rewards.append(0.0)
             continue
 
-        extracted = hash_match.group(1).strip().replace(",", "")
-        ground_clean = ground_truth.strip().replace(",", "")
-
         if extracted == ground_clean:
             rewards.append(2.0)
-        else:
-            try:
-                if abs(float(extracted) - float(ground_clean)) < 1e-6:
-                    rewards.append(2.0)
-                else:
-                    rewards.append(0.0)
-            except ValueError:
+            continue
+
+        try:
+            if abs(float(extracted) - float(ground_clean)) < 1e-6:
+                rewards.append(2.0)
+            else:
                 rewards.append(0.0)
+        except ValueError:
+            rewards.append(0.0)
 
     return rewards
-
-
 def format_reward(
     completions: list[str],
     **kwargs,
@@ -66,6 +77,9 @@ def format_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         has_reasoning = (
             "<reasoning>" in completion and "</reasoning>" in completion
         )
@@ -95,6 +109,9 @@ def int_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         answer_match = re.search(r"<answer>([^<]+)</answer>", completion)
         if answer_match:
             content = answer_match.group(1).strip()
@@ -127,6 +144,9 @@ def xmlcount_reward(
     """
     rewards = []
     for completion in completions:
+        if isinstance(completion, list):
+            completion = completion[0]["content"]
+
         count = 0
         if "<reasoning>" in completion:
             count += 1

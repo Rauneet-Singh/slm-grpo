@@ -7,9 +7,32 @@ from datasets import load_dataset
 
 from config import ExperimentConfig
 
-SYSTEM_PROMPT = (
-    "You are a helpful math tutor. Think step by step and provide "
-    "your final answer after ####. For example: #### 42"
+SYSTEM_PROMPT = ("""You are a helpful math tutor solving grade-school math problems.
+
+Always respond in this exact format:
+<reasoning>
+Explain your step-by-step solution here, showing each calculation.
+</reasoning>
+<answer>
+42
+</answer>
+#### 42
+
+Rules:
+- The <answer> tag must contain ONLY a plain integer, no units, symbols, or commas.
+- The number after #### must exactly match the number inside <answer> tags.
+- Do not skip the <reasoning> section.
+
+Example:
+Question: Sam has 3 boxes with 4 apples each. He eats 2 apples. How many apples does he have left?
+<reasoning>
+Sam starts with 3 boxes of 4 apples, so 3 x 4 = 12 apples.
+He eats 2 apples, so 12 - 2 = 10 apples remain.
+</reasoning>
+<answer>
+10
+</answer>
+#### 10"""
 )
 
 HASH_ANSWER_PATTERN = re.compile(r"####\s*([0-9\.\-]+)")
@@ -105,6 +128,7 @@ def load_gsm8k_dataset(
     """
     dataset = load_dataset(
         config.data.dataset_name,
+        "main",
         split=[
             config.data.dataset_split_train,
             config.data.dataset_split_test,
